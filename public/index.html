@@ -3,47 +3,114 @@
   <head>
     <meta charset="UTF-8" />
     <title>매물 지도</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
+      html,
       body {
-        font-family: 'Noto Sans KR', sans-serif;
+        height: 100%;
         margin: 0;
-        padding: 0;
-      }
-      header {
-        background: #f8f9fa;
-        padding: 10px;
-        text-align: center;
-        font-weight: bold;
-        border-bottom: 1px solid #ddd;
       }
       #map {
         width: 100%;
-        height: 90vh;
+        height: 100%;
       }
-      #refresh {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        padding: 8px 12px;
-        background: #007bff;
-        color: white;
-        border: none;
+      .info-window {
+        padding: 10px;
+        background: white;
         border-radius: 8px;
-        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       }
-      #refresh:hover {
-        background: #0056b3;
+      .info-window p {
+        margin: 4px 0;
+        font-size: 14px;
+      }
+      .info-window a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      .info-window a:hover {
+        text-decoration: underline;
       }
     </style>
-    <script
-      type="text/javascript"
-      src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=e9bbfe24a245730db408c6bdba5520f6&libraries=services"
-    ></script>
+    <!-- ✅ 카카오 지도 API (자신의 JS 키로 교체 필요) -->
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=e9bbfe24a245730db408c6bdba5520f6&libraries=services"></script>
   </head>
   <body>
-    <header>🏠 매물 지도 (Google 스프레드시트 연동)</header>
-    <button id="refresh">새로고침</button>
     <div id="map"></div>
-    <script src="script.js"></script>
+    <script>
+      const mapContainer = document.getElementById('map');
+      const mapOption = {
+        center: new kakao.maps.LatLng(37.5665, 126.978),
+        level: 5,
+      };
+      const map = new kakao.maps.Map(mapContainer, mapOption);
+      const geocoder = new kakao.maps.services.Geocoder();
+
+      // ✅ 현재 내 위치 표시
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const locPosition = new kakao.maps.LatLng(lat, lon);
+
+          const marker = new kakao.maps.Marker({
+            map: map,
+            position: locPosition,
+          });
+
+          const circle = new kakao.maps.Circle({
+            center: locPosition,
+            radius: 30,
+            strokeWeight: 2,
+            strokeColor: '#00aaff',
+            strokeOpacity: 0.7,
+            fillColor: '#00aaff',
+            fillOpacity: 0.3,
+          });
+          circle.setMap(map);
+
+          map.setCenter(locPosition);
+        });
+      }
+
+      // ✅ 스프레드시트 데이터 불러오기
+      async function loadData() {
+        const response = await fetch('/data');
+        const listings = await response.json();
+
+        listings.forEach((item) => {
+          geocoder.addressSearch(item.주소지, function (result, status) {
+            if (status === kakao.maps.services.Status.OK) {
+              const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+              const marker = new kakao.maps.Marker({ map, position: coords });
+
+              const infoContent = `
+              <div class="info-window">
+                <p><strong>주소:</strong> ${item.주소지}</p>
+                <p><strong>가격:</strong> ${item.가격}</p>
+                <p><strong>특이사항:</strong> ${item.특이사항}</p>
+                <p><strong>연락처:</strong> <a href="tel:${item.연락처}">${item.연락처}</a></p>
+              </div>
+            `;
+              const infowindow = new kakao.maps.InfoWindow({
+                content: infoContent,
+              });
+
+              kakao.maps.event.addListener(marker, 'click', function () {
+                infowindow.open(map, marker);
+
+                // 다른 곳 클릭하면 창 닫기
+                kakao.maps.event.addListener(map, 'click', function () {
+                  infowindow.close();
+                });
+              });
+            }
+          });
+        });
+      }
+
+      loadData();
+      setInterval(loadData, 60000); // 1분마다 새로고침
+    </script>
   </body>
 </html>
