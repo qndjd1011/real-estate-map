@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>매물 지도</title>
+    <style>
+      body {
+        font-family: 'Noto Sans KR', sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      header {
+        background: #f8f9fa;
+        padding: 10px;
+        text-align: center;
+        font-weight: bold;
+        border-bottom: 1px solid #ddd;
+      }
+      #map {
+        width: 100%;
+        height: 90vh;
+      }
+      #refresh {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 8px 12px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      #refresh:hover {
+        background: #0056b3;
+      }
+    </style>
+    <script
+      type="text/javascript"
+      src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=e9bbfe24a245730db408c6bdba5520f6&libraries=services"
+    ></script>
+  </head>
+  <body>
+    <header>🏠 매물 지도 (Google 스프레드시트 연동)</header>
+    <button id="refresh">새로고침</button>
+    <div id="map"></div>
+    <script src="script.js"></script>
+  </body>
+</html>
