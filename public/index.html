@@ -3,114 +3,55 @@
   <head>
     <meta charset="UTF-8" />
     <title>매물 지도</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=e9bbfe24a245730db408c6bdba5520f6&libraries=services"></script>
+    <script src="script.js" defer></script>
     <style>
-      html,
       body {
-        height: 100%;
+        font-family: sans-serif;
         margin: 0;
       }
       #map {
         width: 100%;
-        height: 100%;
+        height: 90vh;
       }
-      .info-window {
+      #controls {
         padding: 10px;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        background: #f8f8f8;
+        display: flex;
+        gap: 10px;
       }
-      .info-window p {
-        margin: 4px 0;
-        font-size: 14px;
-      }
-      .info-window a {
-        color: #007bff;
-        text-decoration: none;
-      }
-      .info-window a:hover {
-        text-decoration: underline;
+      input,
+      select,
+      button {
+        padding: 6px;
       }
     </style>
-    <!-- ✅ 카카오 지도 API (자신의 JS 키로 교체 필요) -->
-    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=e9bbfe24a245730db408c6bdba5520f6&libraries=services"></script>
   </head>
   <body>
+    <div id="controls">
+      <select id="regionFilter">
+        <option value="">전체 지역</option>
+        <option value="서울">서울</option>
+        <option value="경기">경기</option>
+        <option value="인천">인천</option>
+      </select>
+
+      <select id="priceFilter">
+        <option value="">전체 가격</option>
+        <option value="10000">1억 이하</option>
+        <option value="30000">3억 이하</option>
+        <option value="50000">5억 이하</option>
+        <option value="100000">10억 이하</option>
+      </select>
+
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="주소 또는 동 입력 (예: 화곡동 61-18)"
+      />
+      <button id="searchBtn">검색</button>
+    </div>
+
     <div id="map"></div>
-    <script>
-      const mapContainer = document.getElementById('map');
-      const mapOption = {
-        center: new kakao.maps.LatLng(37.5665, 126.978),
-        level: 5,
-      };
-      const map = new kakao.maps.Map(mapContainer, mapOption);
-      const geocoder = new kakao.maps.services.Geocoder();
-
-      // ✅ 현재 내 위치 표시
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function (position) {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          const locPosition = new kakao.maps.LatLng(lat, lon);
-
-          const marker = new kakao.maps.Marker({
-            map: map,
-            position: locPosition,
-          });
-
-          const circle = new kakao.maps.Circle({
-            center: locPosition,
-            radius: 30,
-            strokeWeight: 2,
-            strokeColor: '#00aaff',
-            strokeOpacity: 0.7,
-            fillColor: '#00aaff',
-            fillOpacity: 0.3,
-          });
-          circle.setMap(map);
-
-          map.setCenter(locPosition);
-        });
-      }
-
-      // ✅ 스프레드시트 데이터 불러오기
-      async function loadData() {
-        const response = await fetch('/data');
-        const listings = await response.json();
-
-        listings.forEach((item) => {
-          geocoder.addressSearch(item.주소지, function (result, status) {
-            if (status === kakao.maps.services.Status.OK) {
-              const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-              const marker = new kakao.maps.Marker({ map, position: coords });
-
-              const infoContent = `
-              <div class="info-window">
-                <p><strong>주소:</strong> ${item.주소지}</p>
-                <p><strong>가격:</strong> ${item.가격}</p>
-                <p><strong>특이사항:</strong> ${item.특이사항}</p>
-                <p><strong>연락처:</strong> <a href="tel:${item.연락처}">${item.연락처}</a></p>
-              </div>
-            `;
-              const infowindow = new kakao.maps.InfoWindow({
-                content: infoContent,
-              });
-
-              kakao.maps.event.addListener(marker, 'click', function () {
-                infowindow.open(map, marker);
-
-                // 다른 곳 클릭하면 창 닫기
-                kakao.maps.event.addListener(map, 'click', function () {
-                  infowindow.close();
-                });
-              });
-            }
-          });
-        });
-      }
-
-      loadData();
-      setInterval(loadData, 60000); // 1분마다 새로고침
-    </script>
   </body>
 </html>

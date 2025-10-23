@@ -1,140 +1,94 @@
-let map;
-let markers = [];
-let geocoder;
-let openInfoWindow = null;
-let userMarker = null; // 내 위치 마커 저장용
+let map,
+  geocoder,
+  openInfowindow = null;
 
-// 지도 초기화
+// ✅ 지도 초기화
 function initMap() {
   const container = document.getElementById('map');
   const options = {
-    center: new kakao.maps.LatLng(37.5665, 126.978), // 서울 중심
+    center: new kakao.maps.LatLng(37.5665, 126.978),
     level: 7,
   };
   map = new kakao.maps.Map(container, options);
   geocoder = new kakao.maps.services.Geocoder();
 
-  // 지도 클릭 시 열린 창 닫기
-  kakao.maps.event.addListener(map, 'click', function () {
-    if (openInfoWindow) {
-      openInfoWindow.close();
-      openInfoWindow = null;
-    }
-  });
-
-  // ✅ 내 위치 표시
-  showUserLocation();
-
-  // 매물 데이터 로드
   loadData();
+
+  document.getElementById('regionFilter').addEventListener('change', loadData);
+  document.getElementById('priceFilter').addEventListener('change', loadData);
+  document.getElementById('searchBtn').addEventListener('click', handleSearch);
 }
 
-// ✅ 사용자 현재 위치 마커 표시
-function showUserLocation() {
-  if (navigator.geolocation) {
-    navigator.geolocation.watchPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const loc = new kakao.maps.LatLng(lat, lng);
-
-        // 기존 위치 마커 제거
-        if (userMarker) userMarker.setMap(null);
-
-        // 새 마커 추가
-        userMarker = new kakao.maps.Marker({
-          position: loc,
-          map: map,
-          title: '내 위치',
-          image: new kakao.maps.MarkerImage(
-            'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
-            new kakao.maps.Size(30, 45)
-          ),
-        });
-
-        // 지도 중심 이동
-        map.setCenter(loc);
-      },
-      (error) => {
-        console.warn('❌ 위치 정보를 가져올 수 없습니다.', error);
-      },
-      { enableHighAccuracy: true }
-    );
-  } else {
-    console.warn('❌ 이 브라우저는 위치 서비스를 지원하지 않습니다.');
-  }
-}
-
-// 구글 스프레드시트 데이터 불러오기
 async function loadData() {
   try {
+    const regionFilter = document.getElementById('regionFilter').value;
+    const priceFilter = document.getElementById('priceFilter').value;
+
     const res = await fetch('/data');
     const rows = await res.json();
-
-    // 기존 마커 제거
-    markers.forEach((m) => m.setMap(null));
-    markers = [];
-
-    // 첫 줄(헤더) 제외
-    for (let i = 1; i < rows.length; i++) {
-      const [연락처, 주소지, 가격, 특이사항] = rows[i];
-      if (!주소지) continue;
-
-      geocoder.addressSearch(주소지, function (result, status) {
-        if (status === kakao.maps.services.Status.OK) {
-          createMarker(result[0], 연락처, 주소지, 가격, 특이사항);
-        } else {
-          console.warn(`❌ 주소 인식 실패: ${주소지}`);
-        }
-      });
-    }
-
-    console.log('✅ 지도 업데이트 완료');
-  } catch (err) {
-    console.error('❌ 데이터 로드 오류:', err);
+    mapMarkers(rows, regionFilter, priceFilter);
+  } catch (e) {
+    console.error('데이터 불러오기 오류:', e);
   }
 }
 
-// 마커 생성 함수
-function createMarker(result, 연락처, 주소지, 가격, 특이사항) {
-  const coords = new kakao.maps.LatLng(result.y, result.x);
-  const marker = new kakao.maps.Marker({
-    map: map,
-    position: coords,
-  });
-  markers.push(marker);
+// ✅ 지도에 마커 표시
+function mapMarkers(rows, regionFilter, priceFilter) {
+  map.setLevel(7);
+  map.setCenter(new kakao.maps.LatLng(37.5665, 126.978));
 
-  const infoContent = `
-    <div style="
-      padding:10px;
-      min-width:230px;
-      font-size:14px;
-      line-height:1.6;
-    ">
-      📞 <a href="tel:${연락처}" style="color:#007aff;text-decoration:none;font-weight:bold;">
-        ${연락처 || '연락처 없음'}
-      </a><br>
-      📍 ${주소지}<br>
-      💰 ${가격 || '가격 미정'}<br>
-      📝 ${특이사항 || ''}
-    </div>
-  `;
-  const infowindow = new kakao.maps.InfoWindow({ content: infoContent });
+  rows.slice(1).forEach(([지역, 주소, 가격, 연락처, 특이사항, 매물]) => {
+    if (!주소 || !지역) return;
+    if (regionFilter && !지역.includes(regionFilter)) return;
+    if (
+      priceFilter &&
+      parseInt(가격.replace(/[^0-9]/g, '')) > parseInt(priceFilter)
+    )
+      return;
 
-  kakao.maps.event.addListener(marker, 'click', () => {
-    if (openInfoWindow) openInfoWindow.close();
-    infowindow.open(map, marker);
-    openInfoWindow = infowindow;
+    searchAndMark(지역, 주소, 연락처, 특이사항, 매물, 가격);
   });
 }
 
-// 새로고침 버튼
-document.getElementById('refresh').addEventListener('click', () => {
-  loadData();
-});
+// ✅ 주소로 마커 생성
+function searchAndMark(region, address, 연락처, 특이사항, 매물, 가격) {
+  const fullAddress = address.includes(region)
+    ? address
+    : `${region} ${address}`;
+  geocoder.addressSearch(fullAddress, (result, status) => {
+    if (status === kakao.maps.services.Status.OK) {
+      const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+      const marker = new kakao.maps.Marker({ map, position: coords });
+      const info = `
+        <div style="padding:5px;">
+          <b>${매물}</b><br>${fullAddress}<br>💰 ${가격}<br>📞 ${연락처}<br>${특이사항}
+        </div>`;
+      const infowindow = new kakao.maps.InfoWindow({ content: info });
+      kakao.maps.event.addListener(marker, 'click', () => {
+        if (openInfowindow) openInfowindow.close();
+        infowindow.open(map, marker);
+        openInfowindow = infowindow;
+      });
+    } else {
+      console.warn(`주소 인식 실패: ${fullAddress}`);
+    }
+  });
+}
 
-// 자동 새로고침 (30초마다)
-setInterval(loadData, 30000);
+// ✅ 검색 기능
+function handleSearch() {
+  const keyword = document.getElementById('searchInput').value.trim();
+  if (!keyword) return alert('검색어를 입력하세요.');
 
-// 페이지 로드시 지도 실행
+  geocoder.addressSearch(keyword, (result, status) => {
+    if (status === kakao.maps.services.Status.OK) {
+      const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+      map.setCenter(coords);
+      new kakao.maps.Marker({ map, position: coords });
+    } else {
+      alert('주소를 찾을 수 없습니다.');
+    }
+  });
+}
+
 window.onload = initMap;
