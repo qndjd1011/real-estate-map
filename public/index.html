@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>부동산 매물 지도</title>
 
-    <!-- ✅ 스타일 (모바일 대응 포함) -->
     <style>
       body {
         margin: 0;
@@ -15,67 +14,113 @@
 
       header {
         text-align: center;
-        padding: 15px 10px;
+        padding: 12px 10px;
         background-color: #007aff;
         color: white;
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 600;
       }
 
       #filters {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 8px;
         justify-content: center;
         padding: 8px;
         background-color: #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
       }
 
-      #filters input,
-      #filters button {
+      #searchInput,
+      #refresh {
         font-size: 16px;
         padding: 10px;
         border-radius: 8px;
         border: 1px solid #ccc;
       }
-
-      #filters input {
-        width: 280px;
+      #searchInput {
+        width: 320px;
       }
-
-      #filters button {
+      #refresh {
         background-color: #007aff;
-        color: white;
-        cursor: pointer;
+        color: #fff;
         border: none;
-        transition: background-color 0.2s ease;
+        cursor: pointer;
       }
 
-      #filters button:hover {
-        background-color: #005fca;
-      }
-
-      /* ✅ 모바일 환경 개선 */
       @media (max-width: 600px) {
         header {
           font-size: 18px;
         }
-        #filters input,
-        #filters button {
-          width: 90%;
+        #searchInput,
+        #refresh {
+          width: 92%;
           font-size: 18px;
+          padding: 12px;
         }
       }
 
       #map {
         width: 100%;
-        height: calc(100vh - 130px);
+        height: calc(100vh - 120px);
       }
 
-      .info-window a {
-        color: #007aff;
-        text-decoration: underline;
+      /* 사진 모달 */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      .modal {
+        background: #fff;
+        padding: 12px;
+        border-radius: 8px;
+        max-width: 95%;
+        max-height: 90%;
+        overflow: auto;
+      }
+      .modal img {
+        max-width: 100%;
+        border-radius: 6px;
+        display: block;
+        margin-bottom: 8px;
+      }
+      .listing-box {
+        border: 1px solid #eee;
+        padding: 8px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        background: #fff;
+      }
+      .listing-controls {
+        margin-top: 6px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: pointer;
+        border: none;
+      }
+      .btn-photo {
+        background: #007aff;
+        color: #fff;
+      }
+      .btn-remove {
+        background: #ff3b30;
+        color: #fff;
+      }
+      .btn-small {
+        padding: 4px 6px;
+        font-size: 12px;
+        border-radius: 6px;
       }
     </style>
   </head>
@@ -83,22 +128,51 @@
   <body>
     <header>🏠 부동산 매물 지도</header>
 
-    <!-- ✅ 검색 및 새로고침 영역 -->
     <div id="filters">
-      <input type="text" id="searchInput" placeholder="주소 또는 키워드 입력" />
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="주소 또는 키워드 입력 (예: 화곡동 61-18 / 주차 / 원룸)"
+      />
       <button id="refresh">🔄 새로고침</button>
     </div>
 
-    <!-- ✅ 지도 영역 -->
     <div id="map"></div>
 
-    <!-- ✅ 카카오 지도 API -->
+    <!-- 사진 보기 모달 -->
+    <div
+      id="photoModalBackdrop"
+      class="modal-backdrop"
+      role="dialog"
+      aria-hidden="true"
+    >
+      <div class="modal" id="photoModal">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <strong>사진 보기</strong>
+          <button
+            id="closeModal"
+            class="btn btn-small"
+            style="background: #ccc"
+          >
+            닫기
+          </button>
+        </div>
+        <div id="photoContainer" style="margin-top: 10px"></div>
+      </div>
+    </div>
+
+    <!-- 카카오 지도 SDK: YOUR_KAKAO_API_KEY 를 실제 키로 교체하세요 -->
     <script
       type="text/javascript"
       src="//dapi.kakao.com/v2/maps/sdk.js?appkey=e9bbfe24a245730db408c6bdba5520f6&libraries=services"
     ></script>
 
-    <!-- ✅ 메인 스크립트 -->
     <script src="script.js"></script>
   </body>
 </html>
