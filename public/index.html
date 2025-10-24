@@ -2,93 +2,103 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <title>매물 지도</title>
-    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=e9bbfe24a245730db408c6bdba5520f6&libraries=services"></script>
-    <script src="script.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>부동산 매물 지도</title>
+
+    <!-- ✅ 스타일 (모바일 대응 포함) -->
     <style>
       body {
-        font-family: sans-serif;
         margin: 0;
+        font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+        background-color: #f8f9fa;
       }
+
+      header {
+        text-align: center;
+        padding: 15px 10px;
+        background-color: #007aff;
+        color: white;
+        font-size: 22px;
+        font-weight: 600;
+      }
+
+      #filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+        padding: 8px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      #filters input,
+      #filters button {
+        font-size: 16px;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+      }
+
+      #filters input {
+        width: 280px;
+      }
+
+      #filters button {
+        background-color: #007aff;
+        color: white;
+        cursor: pointer;
+        border: none;
+        transition: background-color 0.2s ease;
+      }
+
+      #filters button:hover {
+        background-color: #005fca;
+      }
+
+      /* ✅ 모바일 환경 개선 */
+      @media (max-width: 600px) {
+        header {
+          font-size: 18px;
+        }
+        #filters input,
+        #filters button {
+          width: 90%;
+          font-size: 18px;
+        }
+      }
+
       #map {
         width: 100%;
-        height: 90vh;
+        height: calc(100vh - 130px);
       }
-      #controls {
-        padding: 10px;
-        background: #f8f8f8;
-        display: flex;
-        gap: 10px;
-      }
-      input,
-      select,
-      button {
-        padding: 6px;
+
+      .info-window a {
+        color: #007aff;
+        text-decoration: underline;
       }
     </style>
   </head>
+
   <body>
-    <div id="controls">
-      <select id="regionFilter">
-        <option value="">전체 지역</option>
-        <option value="서울">서울</option>
-        <option value="경기">경기</option>
-        <option value="인천">인천</option>
-      </select>
+    <header>🏠 부동산 매물 지도</header>
 
-      <select id="priceFilter">
-        <option value="">전체 가격</option>
-        <option value="10000">1억 이하</option>
-        <option value="30000">3억 이하</option>
-        <option value="50000">5억 이하</option>
-        <option value="100000">10억 이하</option>
-      </select>
-
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="주소 또는 동 입력 (예: 화곡동 61-18)"
-      />
-      <button id="searchBtn">검색</button>
-    </div>
-    <div
-      style="
-        padding: 10px;
-        background: #f4f4f4;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      "
-    >
-      <select id="regionSelect">
-        <option>전체</option>
-        <option>서울</option>
-        <option>경기</option>
-        <option>인천</option>
-      </select>
-
-      <input
-        id="minPrice"
-        type="number"
-        placeholder="최소 보증금"
-        style="width: 120px"
-      />
-      <input
-        id="maxPrice"
-        type="number"
-        placeholder="최대 월세"
-        style="width: 120px"
-      />
-      <input
-        id="searchInput"
-        type="text"
-        placeholder="주소 / 특이사항 검색"
-        style="flex: 1"
-      />
-      <button id="filterBtn">검색</button>
+    <!-- ✅ 검색 및 새로고침 영역 -->
+    <div id="filters">
+      <input type="text" id="searchInput" placeholder="주소 또는 키워드 입력" />
       <button id="refresh">🔄 새로고침</button>
     </div>
 
+    <!-- ✅ 지도 영역 -->
     <div id="map"></div>
+
+    <!-- ✅ 카카오 지도 API -->
+    <script
+      type="text/javascript"
+      src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_API_KEY&libraries=services"
+    ></script>
+
+    <!-- ✅ 메인 스크립트 -->
+    <script src="script.js"></script>
   </body>
 </html>

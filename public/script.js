@@ -21,31 +21,31 @@ function initMap() {
     }
   });
 
-  showUserLocation();
+  // ✅ 새로고침 시 자동 현재위치 이동 제거
+  showUserLocationOnce();
   loadData();
 
-  document.getElementById('filterBtn').addEventListener('click', applyFilters);
+  // ✅ 필터 검색 기능 단일화
   document.getElementById('searchInput').addEventListener('keyup', (e) => {
-    if (e.key === 'Enter') applyFilters();
+    if (e.key === 'Enter') applySearch();
   });
 
+  // ✅ 새로고침 버튼 클릭 시에만 데이터 갱신
   document.getElementById('refresh').addEventListener('click', loadData);
 
-  // 30초마다 새로고침
-  setInterval(loadData, 30000);
+  // ⛔ 자동 새로고침 제거 (기존 setInterval 삭제)
 }
 
-// ✅ 내 위치 표시
-function showUserLocation() {
+// ✅ 현재위치 1회만 표시 (자동이동 없음)
+function showUserLocationOnce() {
   if (!navigator.geolocation)
     return console.warn('❌ 위치 서비스를 지원하지 않음');
-  navigator.geolocation.watchPosition(
+  navigator.geolocation.getCurrentPosition(
     (pos) => {
       const loc = new kakao.maps.LatLng(
         pos.coords.latitude,
         pos.coords.longitude
       );
-      if (userMarker) userMarker.setMap(null);
       userMarker = new kakao.maps.Marker({
         position: loc,
         map,
@@ -55,45 +55,60 @@ function showUserLocation() {
           new kakao.maps.Size(30, 45)
         ),
       });
-      map.setCenter(loc);
     },
     (err) => console.warn('❌ 위치 정보 불가', err),
     { enableHighAccuracy: true }
   );
 }
 
-// ✅ 구글 스프레드시트 데이터 로드
+// ✅ 구글 시트 데이터 불러오기
 async function loadData() {
   try {
     const res = await fetch('/data');
     const rows = await res.json();
-    allRows = rows;
-    mapMarkers(rows);
+    // ✅ 동일 주소 중 최근 등록만 남기기
+    const uniqueRows = getLatestUniqueRows(rows);
+    allRows = uniqueRows;
+    mapMarkers(uniqueRows);
   } catch (err) {
     console.error('❌ 데이터 로드 오류:', err);
   }
 }
 
-// ✅ 주소 문자열 정리 (전화번호 제거 등)
+// ✅ 동일주소 중 최신 데이터만 유지
+function getLatestUniqueRows(rows) {
+  const header = rows[0];
+  const dataRows = rows.slice(1);
+  const uniqueMap = new Map();
+  for (let row of dataRows) {
+    const addr = row[1] || '';
+    if (!addr) continue;
+    // 같은 주소가 있을 경우, 뒤쪽(최근) 데이터로 덮어쓰기
+    uniqueMap.set(addr.trim(), row);
+  }
+  return [header, ...Array.from(uniqueMap.values())];
+}
+
+// ✅ 주소 문자열 정리
 function cleanAddress(str) {
   if (!str) return '';
   return str
-    .replace(/010-\d{4}-\d{4}/g, '') // 전화번호 제거
-    .replace(/[^가-힣0-9\s\-]/g, '') // 특수문자 제거
+    .replace(/010-\d{4}-\d{4}/g, '')
+    .replace(/[^가-힣0-9\s\-]/g, '')
     .trim();
 }
 
-// ✅ 마커 표시 (순차 처리)
+// ✅ 마커 표시
 async function mapMarkers(rows) {
   markers.forEach((m) => m.setMap(null));
   markers = [];
 
-  const validRows = rows.slice(1).filter((r) => r[1]); // 헤더 제외 + 주소 있는 행만
+  const validRows = rows.slice(1).filter((r) => r[1]);
 
   for (const [연락처, 주소지, 특이사항, 매물] of validRows) {
     let addr = cleanAddress(주소지);
     if (!/서울|경기|인천/.test(addr)) addr = `서울 ${addr}`;
-    await delay(200); // 요청 간격 조절 (0.2초)
+    await delay(200);
     geocoder.addressSearch(addr, (result, status) => {
       if (status === kakao.maps.services.Status.OK) {
         createMarker(result[0], 연락처, addr, 특이사항, 매물);
@@ -104,27 +119,33 @@ async function mapMarkers(rows) {
   }
 }
 
-// ✅ 지연 함수
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// ✅ 마커 생성
+// ✅ 마커 생성 (주소 클릭 시 카카오내비 연결)
 function createMarker(result, 연락처, 주소지, 특이사항, 매물) {
   const coords = new kakao.maps.LatLng(result.y, result.x);
   const marker = new kakao.maps.Marker({ map, position: coords });
   markers.push(marker);
+
+  const kakaoNaviUrl = `https://map.kakao.com/link/to/${encodeURIComponent(
+    주소지
+  )},${result.y},${result.x}`;
 
   const infoContent = `
     <div style="padding:10px;min-width:230px;font-size:14px;line-height:1.6;">
       📞 <a href="tel:${연락처}" style="color:#007aff;font-weight:bold;text-decoration:none;">
         ${연락처 || '연락처 없음'}
       </a><br>
-      📍 ${주소지}<br>
+      📍 <a href="${kakaoNaviUrl}" target="_blank" style="color:#333;text-decoration:underline;">
+        ${주소지}
+      </a><br>
       💬 ${특이사항 || ''}<br>
       💰 ${매물 || ''}
     </div>
   `;
+
   const infowindow = new kakao.maps.InfoWindow({ content: infoContent });
   kakao.maps.event.addListener(marker, 'click', () => {
     if (openInfoWindow) openInfoWindow.close();
@@ -133,38 +154,23 @@ function createMarker(result, 연락처, 주소지, 특이사항, 매물) {
   });
 }
 
-// ✅ 필터 적용
-function applyFilters() {
-  const keyword = document.getElementById('searchInput').value.trim();
-  const minPrice = parseInt(document.getElementById('minPrice').value) || 0;
-  const maxPrice =
-    parseInt(document.getElementById('maxPrice').value) || Infinity;
-  const region = document.getElementById('regionSelect').value;
+// ✅ 검색 기능 (단일 키워드)
+function applySearch() {
+  const keyword = document
+    .getElementById('searchInput')
+    .value.trim()
+    .toLowerCase();
+  if (!keyword) {
+    mapMarkers(allRows);
+    return;
+  }
 
   const filtered = allRows.filter((r, idx) => {
     if (idx === 0) return false;
-    const [연락처, 주소지, 특이사항, 매물] = r;
-    if (!주소지) return false;
-
-    let addr = cleanAddress(주소지);
-    if (!/서울|경기|인천/.test(addr)) addr = `서울 ${addr}`;
-    if (region !== '전체' && !addr.includes(region)) return false;
-
-    const combined = `${주소지} ${특이사항} ${매물}`.toLowerCase();
-    if (keyword && !combined.includes(keyword.toLowerCase())) return false;
-
-    const priceMatch = 매물.match(/(\d+)\/(\d+)/);
-    if (priceMatch) {
-      const deposit = parseInt(priceMatch[1]);
-      const rent = parseInt(priceMatch[2]);
-      if (deposit < minPrice || rent > maxPrice) return false;
-    }
-
-    return true;
+    return r.join(' ').toLowerCase().includes(keyword);
   });
 
-  mapMarkers(filtered);
+  mapMarkers([allRows[0], ...filtered]);
 }
 
-// ✅ 페이지 로드 시 실행
 window.onload = initMap;
