@@ -8,64 +8,47 @@
     <style>
       body {
         margin: 0;
-        font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
-        background-color: #f8f9fa;
+        font-family: sans-serif;
+        background: #f8f9fa;
       }
-
       header {
         text-align: center;
-        padding: 12px 10px;
-        background-color: #007aff;
-        color: white;
+        padding: 12px;
+        background: #007aff;
+        color: #fff;
         font-size: 20px;
         font-weight: 600;
       }
-
       #filters {
         display: flex;
-        flex-wrap: wrap;
         gap: 8px;
-        justify-content: center;
         padding: 8px;
-        background-color: #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        justify-content: center;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
       }
-
       #searchInput,
       #refresh {
-        font-size: 16px;
         padding: 10px;
         border-radius: 8px;
         border: 1px solid #ccc;
+        font-size: 16px;
       }
       #searchInput {
         width: 320px;
       }
       #refresh {
-        background-color: #007aff;
+        background: #007aff;
         color: #fff;
         border: none;
         cursor: pointer;
       }
-
-      @media (max-width: 600px) {
-        header {
-          font-size: 18px;
-        }
-        #searchInput,
-        #refresh {
-          width: 92%;
-          font-size: 18px;
-          padding: 12px;
-        }
-      }
-
       #map {
         width: 100%;
         height: calc(100vh - 120px);
       }
 
-      /* 사진 모달 */
+      /* modal */
       .modal-backdrop {
         position: fixed;
         inset: 0;
@@ -122,9 +105,20 @@
         font-size: 12px;
         border-radius: 6px;
       }
+
+      @media (max-width: 600px) {
+        #searchInput,
+        #refresh {
+          width: 90%;
+          font-size: 18px;
+          padding: 12px;
+        }
+        header {
+          font-size: 18px;
+        }
+      }
     </style>
   </head>
-
   <body>
     <header>🏠 부동산 매물 지도</header>
 
@@ -132,14 +126,13 @@
       <input
         type="text"
         id="searchInput"
-        placeholder="주소 또는 키워드 입력 (예: 화곡동 61-18 / 주차 / 원룸)"
+        placeholder="주소 또는 키워드 입력 (예: 화곡동 / 주차 / 원룸)"
       />
       <button id="refresh">🔄 새로고침</button>
     </div>
 
     <div id="map"></div>
 
-    <!-- 사진 보기 모달 -->
     <div
       id="photoModalBackdrop"
       class="modal-backdrop"
@@ -154,7 +147,7 @@
             align-items: center;
           "
         >
-          <strong>사진 보기</strong>
+          <strong>사진 보기 / 업로드</strong>
           <button
             id="closeModal"
             class="btn btn-small"
@@ -164,15 +157,23 @@
           </button>
         </div>
         <div id="photoContainer" style="margin-top: 10px"></div>
+        <div style="margin-top: 10px">
+          <input id="photoFileInput" type="file" accept="image/*" />
+          <button
+            id="uploadPhotoBtn"
+            class="btn btn-small"
+            style="background: #007aff; color: #fff"
+          >
+            업로드 (브라우저 전용)
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- 카카오 지도 SDK: YOUR_KAKAO_API_KEY 를 실제 키로 교체하세요 -->
     <script
       type="text/javascript"
       src="//dapi.kakao.com/v2/maps/sdk.js?appkey=e9bbfe24a245730db408c6bdba5520f6&libraries=services"
     ></script>
-
     <script src="script.js"></script>
   </body>
 </html>
