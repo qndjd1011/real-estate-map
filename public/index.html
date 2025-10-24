@@ -51,6 +51,43 @@
       />
       <button id="searchBtn">검색</button>
     </div>
+    <div
+      style="
+        padding: 10px;
+        background: #f4f4f4;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      "
+    >
+      <select id="regionSelect">
+        <option>전체</option>
+        <option>서울</option>
+        <option>경기</option>
+        <option>인천</option>
+      </select>
+
+      <input
+        id="minPrice"
+        type="number"
+        placeholder="최소 보증금"
+        style="width: 120px"
+      />
+      <input
+        id="maxPrice"
+        type="number"
+        placeholder="최대 월세"
+        style="width: 120px"
+      />
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="주소 / 특이사항 검색"
+        style="flex: 1"
+      />
+      <button id="filterBtn">검색</button>
+      <button id="refresh">🔄 새로고침</button>
+    </div>
 
     <div id="map"></div>
   </body>
